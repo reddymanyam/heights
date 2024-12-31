@@ -13,6 +13,7 @@ export default function ProjectManager() {
     const [priorityOptions, setPriorityOptions] = useState([]);
     const [assigneeOptions, setAssigneeOptions] = useState([]);
     const [editingSubtask, setEditingSubtask] = useState(null);
+
     const [editingValues, setEditingValues] = useState({
         title: "",
         startDate: "",
@@ -26,7 +27,11 @@ export default function ProjectManager() {
     const [expandedProjectId, setExpandedProjectId] = useState(null);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isAddSubtaskDialogOpen, setIsAddSubtaskDialogOpen] = useState(false);
-    const [newProject, setNewProject] = useState({ project: "", subtasks: [] });
+
+    const [newProject, setNewProject] = useState({ 
+        project: "", 
+        subtasks: [] });
+
     const [newSubtask, setNewSubtask] = useState({
         title: "",
         startDate: "",
@@ -35,6 +40,7 @@ export default function ProjectManager() {
         priority: "",
         assignedTo: []
     });
+    
     const [selectedProjectId, setSelectedProjectId] = useState(null);
 
     useEffect(() => {
