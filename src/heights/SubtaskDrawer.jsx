@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Box, Typography, Button, TextField, Select, MenuItem,
     List, ListItem,
@@ -11,111 +11,137 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import EmailAvatars from './EmailAvatars';
 
-// Initial subtasks data
-const initialSubtasks = [
-    {
-        id: 1,
-        title: "Research local competitors",
-        status: "Open",
-        priority: "High",
-        EndDate: "2024-01-20",
-        assignedTo: ["john@example.com"],
-        description: "Analyze competitor pricing and services in the local area"
-    },
-    {
-        id: 2,
-        title: "Create market analysis report",
-        status: "Working",
-        priority: "Medium",
-        EndDate: "2024-01-25",
-        assignedTo: ["sarah@example.com"],
-        description: "Compile findings into a comprehensive report"
-    },
-    {
-        id: 3,
-        title: "Schedule team review meeting",
-        status: "Completed",
-        priority: "Low",
-        EndDate: "2024-01-15",
-        assignedTo: ["mike@example.com"],
-        description: "Set up meeting to discuss findings with team"
-    }
-];
 
 const SubtaskDrawer = ({
     open,
     onClose,
     selectedTask,
-    users,
+    users = [],
     statusOptions,
     priorityOptions,
     getStatusStyle,
-    getPriorityStyle
+    getPriorityStyle,
+    fetchSubtasks,
+    createSubtask,
+    updateSubtask,
+    deleteSubtask
 }) => {
-    const [subtasks, setSubtasks] = useState(selectedTask?.subtasks || initialSubtasks);
+    const [subtasks, setSubtasks] = useState([]);
     const [showAddSubtask, setShowAddSubtask] = useState(false);
     const [editingSubtask, setEditingSubtask] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [description, setDescription] = useState(selectedTask?.description || '');
 
+    // Fetch subtasks when drawer opens or selected task changes
+    useEffect(() => {
+        const loadSubtasks = async () => {
+            if (selectedTask && selectedTask.id) {
+                try {
+                    const fetchedSubtasks = await fetchSubtasks(selectedTask.id);
+                    // console.log("fetchedSubtasks", fetchedSubtasks);
+                    
+                    setSubtasks(fetchedSubtasks || []); 
+                } catch (error) {
+                    // console.error('Error fetching subtasks:', error);
+                    setSubtasks([]); 
+                }
+            } else {
+                setSubtasks([]); 
+            }
+        };
+    
+        if (open) {
+            loadSubtasks();
+        }
+    }, [open, selectedTask, fetchSubtasks]);
+    
+    
+     // Filter assignee options based on search term
+     const filteredAssigneeOptions = users
+     ?.filter(user => 
+         user?.email && 
+         user.email.toLowerCase().includes(searchTerm.toLowerCase())
+     )
+     .map(user => user.email) || [];
+
     const [newSubtask, setNewSubtask] = useState({
+        subject: '',
         title: '',
         status: '',
         priority: '',
+        StartDate: '',
         EndDate: '',
         assignedTo: [],
-        description: ''
+        description: '',
+        parent_task: selectedTask?.id
     });
 
     const [editValues, setEditValues] = useState({});
 
-    // Filter assignee options based on search term
-    const filteredAssigneeOptions = users
-        ?.filter(user => user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-        .map(user => user.email) || [];
-
-    const handleAddSubtask = () => {
+    const handleAddSubtask = async () => {
         if (!newSubtask.title.trim()) return;
 
-        const subtask = {
-            id: Date.now(),
-            ...newSubtask
-        };
+        try {
+            const createdSubtask = await createSubtask({
+                ...newSubtask,
+                subject: newSubtask.title, 
+                parent_task: selectedTask.id
+            });
 
-        setSubtasks([...subtasks, subtask]);
-        setNewSubtask({
-            title: '',
-            status: '',
-            priority: '',
-            EndDate: '',
-            assignedTo: [],
-            description: ''
-        });
-        setShowAddSubtask(false);
+            setSubtasks([...subtasks, createdSubtask]);
+            setNewSubtask({
+                title: '',
+                status: '',
+                priority: '',
+                StartDate: '',
+                EndDate: '',
+                assignedTo: [],
+                description: '',
+                parent_task: selectedTask.id
+            });
+            setShowAddSubtask(false);
+        } catch (error) {
+            // console.error('Error creating subtask:', error);
+        }
     };
 
     const handleEditSubtask = (subtask) => {
         setEditingSubtask(subtask.id);
         setEditValues({
-            title: subtask.title,
-            status: subtask.status,
-            priority: subtask.priority,
-            EndDate: subtask.EndDate,
-            assignedTo: subtask.assignedTo,
-            description: subtask.description
+            title: subtask.title || '',
+            status: subtask.status || '',
+            priority: subtask.priority || '',
+            StartDate: subtask.exp_start_date || '',
+            EndDate: subtask.exp_end_date || '',
+            assignedTo: subtask.assignedTo || [],
+            description: subtask.description || ''
         });
     };
 
-    const handleUpdateSubtask = (subtaskId) => {
-        setSubtasks(subtasks.map(subtask =>
-            subtask.id === subtaskId ? { ...subtask, ...editValues } : subtask
-        ));
-        setEditingSubtask(null);
-        setEditValues({});
+    const handleUpdateSubtask = async (subtaskId) => {
+        try {
+            const updatedSubtask = await updateSubtask(subtaskId, {
+                ...editValues,
+                parent_task: selectedTask.id
+            });
+
+            setSubtasks(subtasks.map(subtask =>
+                subtask.id === subtaskId ? updatedSubtask : subtask
+            ));
+            setEditingSubtask(null);
+            setEditValues({});
+        } catch (error) {
+            // console.error('Error updating subtask:', error);
+        }
     };
 
-    const handleDeleteSubtask = (subtaskId) => {
-        setSubtasks(subtasks.filter(subtask => subtask.id !== subtaskId));
+    const handleDeleteSubtask = async (subtaskId) => {
+        try {
+            await deleteSubtask(subtaskId);
+            setSubtasks(subtasks.filter(subtask => subtask.id !== subtaskId));
+        } catch (error) {
+            // console.error('Error deleting subtask:', error);
+        }
     };
 
     const handleCancelEdit = () => {
@@ -137,7 +163,7 @@ const SubtaskDrawer = ({
             onClose={onClose}
             sx={{
                 '& .MuiDrawer-paper': {
-                    width: '75%',
+                    width: '80%',
                     padding: 2,
                     boxSizing: 'border-box'
                 }
@@ -145,10 +171,16 @@ const SubtaskDrawer = ({
         >
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {/* Header */}
-                <Box>
-                    <Typography variant="h6" gutterBottom>
-                        {selectedTask?.title}
-                    </Typography>
+                <>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="h6" gutterBottom>
+                            {selectedTask?.title}
+                        </Typography>
+                        <IconButton onClick={onClose} style={{ borderRadius: '50%', backgroundColor: 'red', padding: '3px', marginBottom: "5px" }}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Typography variant="subtitle1">Subtasks</Typography>
                         <Button
@@ -160,7 +192,7 @@ const SubtaskDrawer = ({
                             Add Subtask
                         </Button>
                     </Box>
-                </Box>
+                </>
 
                 {/* Add Subtask Form */}
                 {showAddSubtask && (
@@ -177,15 +209,22 @@ const SubtaskDrawer = ({
                         <Grid item xs={2}>
                             <TextField
                                 type="date"
-                                label="Due Date"
+                                value={newSubtask.StartDate}
+                                onChange={(e) => setNewSubtask(prev => ({ ...prev, StartDate: e.target.value }))}
+                                size="small"
+                                fullWidth
+                            />
+                        </Grid>
+                        <Grid item xs={2}>
+                            <TextField
+                                type="date"
                                 value={newSubtask.EndDate}
                                 onChange={(e) => setNewSubtask(prev => ({ ...prev, EndDate: e.target.value }))}
                                 size="small"
                                 fullWidth
-                                InputLabelProps={{ shrink: true }}
                             />
                         </Grid>
-                        <Grid item xs={2}>
+                        <Grid item xs={1}>
                             <Select
                                 value={newSubtask.status}
                                 onChange={(e) => setNewSubtask(prev => ({ ...prev, status: e.target.value }))}
@@ -198,7 +237,7 @@ const SubtaskDrawer = ({
                                 ))}
                             </Select>
                         </Grid>
-                        <Grid item xs={2}>
+                        <Grid item xs={1}>
                             <Select
                                 value={newSubtask.priority}
                                 onChange={(e) => setNewSubtask(prev => ({ ...prev, priority: e.target.value }))}
@@ -211,7 +250,7 @@ const SubtaskDrawer = ({
                                 ))}
                             </Select>
                         </Grid>
-                        <Grid item xs={2}>
+                        <Grid item xs={1}>
                             <Select
                                 multiple
                                 fullWidth
@@ -247,9 +286,9 @@ const SubtaskDrawer = ({
 
                 {/* Subtasks List */}
                 <List sx={{ flex: 1, overflow: 'auto' }}>
-                    {subtasks.map(subtask => (
+                    {(subtasks || []).map(subtask => (
                         <ListItem
-                            key={subtask.id}
+                            key={subtask.name}
                             sx={{
                                 mb: 1,
                                 bgcolor: 'background.paper',
@@ -270,6 +309,16 @@ const SubtaskDrawer = ({
                                     <Grid item xs={2}>
                                         <TextField
                                             type="date"
+                                            value={editValues.StartDate}
+                                            onChange={(e) => handleEditChange('StartDate', e.target.value)}
+                                            size="small"
+                                            fullWidth
+                                            InputLabelProps={{ shrink: true }}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={2}>
+                                        <TextField
+                                            type="date"
                                             value={editValues.EndDate}
                                             onChange={(e) => handleEditChange('EndDate', e.target.value)}
                                             size="small"
@@ -277,7 +326,7 @@ const SubtaskDrawer = ({
                                             InputLabelProps={{ shrink: true }}
                                         />
                                     </Grid>
-                                    <Grid item xs={2}>
+                                    <Grid item xs={1}>
                                         <Select
                                             value={editValues.status}
                                             onChange={(e) => handleEditChange('status', e.target.value)}
@@ -289,7 +338,7 @@ const SubtaskDrawer = ({
                                             ))}
                                         </Select>
                                     </Grid>
-                                    <Grid item xs={2}>
+                                    <Grid item xs={1}>
                                         <Select
                                             value={editValues.priority}
                                             onChange={(e) => handleEditChange('priority', e.target.value)}
@@ -301,7 +350,7 @@ const SubtaskDrawer = ({
                                             ))}
                                         </Select>
                                     </Grid>
-                                    <Grid item xs={2}>
+                                    <Grid item xs={1}>
                                         <Select
                                             multiple
                                             fullWidth
@@ -325,12 +374,15 @@ const SubtaskDrawer = ({
                                     </Grid>
                                 </Grid>
                             ) : (
-                                <Grid container spacing={2} alignItems="center">
+                                <Grid container spacing={1} alignItems="center">
                                     <Grid item xs={3}>
-                                        <Typography variant="body2">{subtask.title}</Typography>
+                                        <Typography variant="body2">{subtask.subject || "N/A"}</Typography>
+                                    </Grid>
+                                    <Grid item xs={1}>
+                                        <Typography variant="body2">{subtask.exp_start_date || "N/A"}</Typography>
                                     </Grid>
                                     <Grid item xs={2}>
-                                        <Typography variant="body2">{subtask.EndDate}</Typography>
+                                        <Typography variant="body2">{subtask.exp_end_date || "N/A"}</Typography>
                                     </Grid>
                                     <Grid item xs={2}>
                                         <Chip
@@ -346,15 +398,15 @@ const SubtaskDrawer = ({
                                             sx={{ ...getPriorityStyle(subtask.priority) }}
                                         />
                                     </Grid>
-                                    <Grid item xs={2}>
-                                        <EmailAvatars emails={subtask.assignedTo} />
+                                    <Grid item xs={1}>
+                                        <EmailAvatars emails={subtask.assignedTo || []} />
                                     </Grid>
                                     <Grid item xs={1} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                         <IconButton onClick={() => handleEditSubtask(subtask)} size="small">
                                             <EditIcon sx={{ color: "green" }} />
                                         </IconButton>
                                         <IconButton onClick={() => handleDeleteSubtask(subtask.id)} size="small">
-                                            <DeleteIcon  sx={{ color: "red" }} />
+                                            <DeleteIcon sx={{ color: "red" }} />
                                         </IconButton>
                                     </Grid>
                                 </Grid>
