@@ -83,11 +83,11 @@ export default function Heights() {
   const fetchSubtasksForTask = (taskId) => {
     console.log('Fetching subtasks for task:', taskId);
     console.log('All subtasks:', subtasks);
-    
+
     const taskSubtasks = subtasks?.filter(subtask => subtask.parent_task === taskId) || [];
-    
+
     console.log('Filtered subtasks:', taskSubtasks);
-    
+
     return taskSubtasks;
   };
 
@@ -98,13 +98,13 @@ export default function Heights() {
         data: {
           ...subtaskData,
           custom_task: 1,
-          parent_task: subtaskData.parent_task || '', 
+          parent_task: subtaskData.parent_task || '',
         }
       });
-  
+
       // Refresh subtasks after creation
       await mutateSubtasks();
-  
+
       return createdSubtask;
     } catch (error) {
       console.error('Error creating subtask:', error);
@@ -120,13 +120,13 @@ export default function Heights() {
           name: subtaskId,
           ...subtaskData,
           custom_task: 1,
-          parent_task: subtaskData.parent_task || '', 
+          parent_task: subtaskData.parent_task || '',
         }
       });
-  
+
       // Refresh subtasks after update
       await mutateSubtasks();
-  
+
       return updatedSubtask;
     } catch (error) {
       console.error('Error updating subtask:', error);
@@ -138,7 +138,7 @@ export default function Heights() {
   const deleteSubtask = async (subtaskId) => {
     try {
       await deleteTask('Task', subtaskId);
-  
+
       // Refresh subtasks after deletion
       await mutateSubtasks();
     } catch (error) {
@@ -178,15 +178,15 @@ export default function Heights() {
   let parentTasks = [];
   let subTasks = [];
 
-  if(tasks){
+  if (tasks) {
     //Parent Tasks filtering
-    parentTasks = tasks.message.filter((task)=>{
+    parentTasks = tasks.message.filter((task) => {
       return task.parent_task === "" || task.parent_task === null;
     })
 
     //Sub Tasks filtering
     // subTasks = tasks.message.filter((task)=>{
-      // return task.parent_task != "" || task.parent_task != null;
+    // return task.parent_task != "" || task.parent_task != null;
     // })
     // console.log("tasks = ", parentTasks);
   }
@@ -828,19 +828,19 @@ export default function Heights() {
         </Box>
         {/* Subtasks Drawer */}
         <SubtaskDrawer
-  open={drawerOpen}
-  onClose={() => setDrawerOpen(false)}
-  selectedTask={selectedTask}
-  users={users}
-  statusOptions={statusOptions}
-  priorityOptions={priorityOptions}
-  getStatusStyle={getStatusStyle}
-  getPriorityStyle={getPriorityStyle}
-  fetchSubtasks={fetchSubtasksForTask}
-  createSubtask={createSubtask}
-  updateSubtask={updateSubtask}
-  deleteSubtask={deleteSubtask}
-/>
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          selectedTask={selectedTask}
+          users={users}
+          statusOptions={statusOptions}
+          priorityOptions={priorityOptions}
+          getStatusStyle={getStatusStyle}
+          getPriorityStyle={getPriorityStyle}
+          fetchSubtasks={fetchSubtasksForTask}
+          createSubtask={createSubtask}
+          updateSubtask={updateSubtask}
+          deleteSubtask={deleteSubtask}
+        />
       </Box>
     </>
   );
