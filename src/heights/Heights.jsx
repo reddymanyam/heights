@@ -73,6 +73,80 @@ export default function Heights() {
     setSelectedTask(task);
     setDrawerOpen(true);
   };
+
+  const { data: subtasks, mutate: mutateSubtasks } = useFrappeGetDocList('Task', {
+    fields: ['name', 'subject', 'status', 'priority', 'exp_start_date', 'exp_end_date', "parent_task"],
+    filters: [['custom_task', '=', "1"]],
+  });
+
+  // Method to fetch subtasks for a specific task
+  const fetchSubtasksForTask = (taskId) => {
+    console.log('Fetching subtasks for task:', taskId);
+    console.log('All subtasks:', subtasks);
+    
+    const taskSubtasks = subtasks?.filter(subtask => subtask.parent_task === taskId) || [];
+    
+    console.log('Filtered subtasks:', taskSubtasks);
+    
+    return taskSubtasks;
+  };
+
+  // Method to create a subtask
+  const createSubtask = async (subtaskData) => {
+    try {
+      const createdSubtask = await updateTask({
+        data: {
+          ...subtaskData,
+          custom_task: 1,
+          parent_task: subtaskData.parent_task || '', 
+        }
+      });
+  
+      // Refresh subtasks after creation
+      await mutateSubtasks();
+  
+      return createdSubtask;
+    } catch (error) {
+      console.error('Error creating subtask:', error);
+      throw error;
+    }
+  };
+
+  // Method to update a subtask
+  const updateSubtask = async (subtaskId, subtaskData) => {
+    try {
+      const updatedSubtask = await updateTask({
+        data: {
+          name: subtaskId,
+          ...subtaskData,
+          custom_task: 1,
+          parent_task: subtaskData.parent_task || '', 
+        }
+      });
+  
+      // Refresh subtasks after update
+      await mutateSubtasks();
+  
+      return updatedSubtask;
+    } catch (error) {
+      console.error('Error updating subtask:', error);
+      throw error;
+    }
+  };
+
+  // Method to delete a subtask
+  const deleteSubtask = async (subtaskId) => {
+    try {
+      await deleteTask('Task', subtaskId);
+  
+      // Refresh subtasks after deletion
+      await mutateSubtasks();
+    } catch (error) {
+      console.error('Error deleting subtask:', error);
+      throw error;
+    }
+  };
+
   //subtasks section end.......................
 
   const [newProject, setNewProject] = useState({ project: '', subtasks: [] });
@@ -100,6 +174,22 @@ export default function Heights() {
   const { data: tasks, mutate: mutateTasks } = useFrappeGetCall('novelite_us.novelite_us.api.Land_Acquisitions.tasksList.fetch.get_all_custom_tasks');
   const { call: updateTask } = useFrappePostCall('novelite_us.novelite_us.api.Land_Acquisitions.tasksList.fetch.add_custom_task');
   const { deleteDoc: deleteTask } = useFrappeDeleteDoc();
+
+  let parentTasks = [];
+  let subTasks = [];
+
+  if(tasks){
+    //Parent Tasks filtering
+    parentTasks = tasks.message.filter((task)=>{
+      return task.parent_task === "" || task.parent_task === null;
+    })
+
+    //Sub Tasks filtering
+    // subTasks = tasks.message.filter((task)=>{
+      // return task.parent_task != "" || task.parent_task != null;
+    // })
+    // console.log("tasks = ", parentTasks);
+  }
 
   const transformedProjects = React.useMemo(() => {
     if (!projects || !tasks) return [];
@@ -397,7 +487,7 @@ export default function Heights() {
                           }}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ border: 'none' }}>
                         <Button variant="contained" onClick={handleAddProject} sx={{ mr: 1, border: 'none' }}>
                           Save
                         </Button>
@@ -467,7 +557,7 @@ export default function Heights() {
                                 ) : (
                                   <>
                                     {project.subtasks.map(subtask => (
-                                      <TableRow key={subtask.id} sx={{ bgcolor: 'background.paper', borderRadius:1, '&:hover':{ bgcolor:'action.hover' } }}>
+                                      <TableRow key={subtask.id} sx={{ bgcolor: 'background.paper', borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }}>
                                         <TableCell onClick={() => handleTaskClick(subtask)} sx={{ cursor: "pointer", border: 'none' }} >
                                           {isEditing(project.id, subtask.id) ? (
                                             <TextField
@@ -738,15 +828,19 @@ export default function Heights() {
         </Box>
         {/* Subtasks Drawer */}
         <SubtaskDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          selectedTask={selectedTask}
-          users={users}
-          statusOptions={statusOptions}
-          priorityOptions={priorityOptions}
-          getStatusStyle={getStatusStyle}
-          getPriorityStyle={getPriorityStyle}
-        />
+  open={drawerOpen}
+  onClose={() => setDrawerOpen(false)}
+  selectedTask={selectedTask}
+  users={users}
+  statusOptions={statusOptions}
+  priorityOptions={priorityOptions}
+  getStatusStyle={getStatusStyle}
+  getPriorityStyle={getPriorityStyle}
+  fetchSubtasks={fetchSubtasksForTask}
+  createSubtask={createSubtask}
+  updateSubtask={updateSubtask}
+  deleteSubtask={deleteSubtask}
+/>
       </Box>
     </>
   );
