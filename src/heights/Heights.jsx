@@ -56,8 +56,8 @@ export default function Heights() {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedProjectId, setExpandedProjectId] = useState(null);
   const [showAddProject, setShowAddProject] = useState(false);
-  const [showAddSubtask, setShowAddSubtask] = useState({});
-  const [editingSubtask, setEditingSubtask] = useState(null);
+  const [showAddTask, setShowAddTask] = useState({});
+  const [editingTask, setEditingTask] = useState(null);
   const [editingValues, setEditingValues] = useState({});
 
   //state for filters
@@ -74,83 +74,8 @@ export default function Heights() {
     setDrawerOpen(true);
   };
 
-  const { data: subtasks, mutate: mutateSubtasks } = useFrappeGetDocList('Task', {
-    fields: ['name', 'subject', 'status', 'priority', 'exp_start_date', 'exp_end_date', "parent_task"],
-    filters: [['custom_task', '=', "1"]],
-  });
-
-  // Method to fetch subtasks for a specific task
-  const fetchSubtasksForTask = (taskId) => {
-    console.log('Fetching subtasks for task:', taskId);
-    console.log('All subtasks:', subtasks);
-
-    const taskSubtasks = subtasks?.filter(subtask => subtask.parent_task === taskId) || [];
-
-    console.log('Filtered subtasks:', taskSubtasks);
-
-    return taskSubtasks;
-  };
-
-  // Method to create a subtask
-  const createSubtask = async (subtaskData) => {
-    try {
-      const createdSubtask = await updateTask({
-        data: {
-          ...subtaskData,
-          custom_task: 1,
-          parent_task: subtaskData.parent_task || '',
-        }
-      });
-
-      // Refresh subtasks after creation
-      await mutateSubtasks();
-
-      return createdSubtask;
-    } catch (error) {
-      console.error('Error creating subtask:', error);
-      throw error;
-    }
-  };
-
-  // Method to update a subtask
-  const updateSubtask = async (subtaskId, subtaskData) => {
-    try {
-      const updatedSubtask = await updateTask({
-        data: {
-          name: subtaskId,
-          ...subtaskData,
-          custom_task: 1,
-          parent_task: subtaskData.parent_task || '',
-        }
-      });
-
-      // Refresh subtasks after update
-      await mutateSubtasks();
-
-      return updatedSubtask;
-    } catch (error) {
-      console.error('Error updating subtask:', error);
-      throw error;
-    }
-  };
-
-  // Method to delete a subtask
-  const deleteSubtask = async (subtaskId) => {
-    try {
-      await deleteTask('Task', subtaskId);
-
-      // Refresh subtasks after deletion
-      await mutateSubtasks();
-    } catch (error) {
-      console.error('Error deleting subtask:', error);
-      throw error;
-    }
-  };
-
-  //subtasks section end.......................
-
-  const [newProject, setNewProject] = useState({ project: '', subtasks: [] });
-  const [newSubtask, setNewSubtask] = useState({
+  const [newProject, setNewProject] = useState({ project: '', tasks: [] });
+  const [newTask, setNewTask] = useState({
     title: '',
     startDate: '',
     endDate: '',
@@ -175,20 +100,75 @@ export default function Heights() {
   const { call: updateTask } = useFrappePostCall('novelite_us.novelite_us.api.Land_Acquisitions.tasksList.fetch.add_custom_task');
   const { deleteDoc: deleteTask } = useFrappeDeleteDoc();
 
+// ------------------------------------------------------ Subtasks Section Start ------------------------------------------------------
+  const createSubtask = async (subtaskData) => {
+    try {
+        const result = await updateTask({
+            data: {
+                ...subtaskData,
+                custom_task: 1
+            }
+        });
+
+        // Refresh tasks
+        await mutateTasks();
+
+        return result;
+    } catch (error) {
+        console.error('Error creating subtask:', error);
+        throw error;
+    }
+};
+
+const updateSubtask = async (subtaskId, updatedData) => {
+  try {
+      const result = await updateTask({
+          data: {
+              name: subtaskId,
+              ...updatedData,
+              custom_task: 1
+          }
+      });
+
+      // Refresh tasks
+      await mutateTasks();
+
+      return result;
+  } catch (error) {
+      console.error('Error updating subtask:', error);
+      throw error;
+  }
+};
+
+const deleteSubtask = async (subtaskId) => {
+  try {
+      await deleteTask('Task', subtaskId);
+
+      // Refresh tasks
+      await mutateTasks();
+  } catch (error) {
+      console.error('Error deleting subtask:', error);
+      throw error;
+  }
+};
+//------------------------------------------------------ Subtasks Section End ------------------------------------------------------
+
+  // Method to fetch subtasks for a specific task
+  const fetchSubtasksForTask = (parentTaskId) => {
+    if (!tasks || !tasks.message) return [];
+
+    return tasks.message.filter(task => 
+        task.parent_task === parentTaskId && task.custom_task === 1
+    );
+};
+
   let parentTasks = [];
-  let subTasks = [];
 
   if (tasks) {
     //Parent Tasks filtering
     parentTasks = tasks.message.filter((task) => {
       return task.parent_task === "" || task.parent_task === null;
-    })
-
-    //Sub Tasks filtering
-    // subTasks = tasks.message.filter((task)=>{
-    // return task.parent_task != "" || task.parent_task != null;
-    // })
-    // console.log("tasks = ", parentTasks);
+    });
   }
 
   const transformedProjects = React.useMemo(() => {
@@ -197,16 +177,24 @@ export default function Heights() {
     return projects.map(project => ({
       id: project.name,
       project: project.project_name,
-      subtasks: tasks?.message?.filter(task => task.project === project.name)?.map(task => ({
-        id: task.name,
-        title: task.subject,
-        startDate: task.exp_start_date,
-        endDate: task.exp_end_date,
-        status: task.status,
-        priority: task.priority,
-        assignedTo: task.assigned_to_users ? task.assigned_to_users : [],
-        project_name: task.project
-      }))
+      tasks: [
+        // First, add parent tasks for this project
+        ...(tasks?.message?.filter(task =>
+          (task.parent_task === "" || task.parent_task === null) &&
+          task.project === project.name
+        )?.map(task => ({
+          id: task.name,
+          title: task.subject,
+          startDate: task.exp_start_date,
+          endDate: task.exp_end_date,
+          status: task.status,
+          priority: task.priority,
+          assignedTo: task.assigned_to_users ? task.assigned_to_users : [],
+          project_name: task.project,
+          isParentTask: true // Add a flag to distinguish parent tasks
+        })) || []),
+
+      ]
     }));
   }, [projects, tasks]);
 
@@ -215,9 +203,9 @@ export default function Heights() {
 
     return transformedProjects.map(project => ({
       ...project,
-      subtasks: project.subtasks.filter(subtask => {
-        const matchesStatus = !statusFilter || subtask.status === statusFilter;
-        const matchesPriority = !priorityFilter || subtask.priority === priorityFilter;
+      tasks: project.tasks.filter(task => {
+        const matchesStatus = !statusFilter || task.status === statusFilter;
+        const matchesPriority = !priorityFilter || task.priority === priorityFilter;
         return matchesStatus && matchesPriority;
       })
     }));
@@ -239,7 +227,7 @@ export default function Heights() {
     setActiveTab(newValue);
   };
 
-  const handleToggleSubtasks = (projectId) => {
+  const handleToggleTasks = (projectId) => {
     setExpandedProjectId(prev => prev === projectId ? null : projectId);
   };
 
@@ -256,15 +244,15 @@ export default function Heights() {
       });
 
       mutateProjects();
-      setNewProject({ project: '', subtasks: [] });
+      setNewProject({ project: '', tasks: [] });
       setShowAddProject(false);
     } catch (error) {
       console.error('Error creating project:', error);
     }
   };
 
-  const handleAddSubtask = async (projectId) => {
-    if (!newSubtask.title.trim()) return;
+  const handleAddTask = async (projectId) => {
+    if (!newTask.title.trim()) return;
 
     try {
       const projectData = projects.find(p => p.name === projectId);
@@ -273,19 +261,19 @@ export default function Heights() {
         data: {
           project: projectId,
           project_name: projectData?.project_name || '',
-          subject: newSubtask.title,
-          status: newSubtask.status,
-          priority: newSubtask.priority,
-          exp_start_date: newSubtask.startDate,
-          exp_end_date: newSubtask.endDate,
-          assigned_to_users: newSubtask.assignedTo,
+          subject: newTask.title,
+          status: newTask.status,
+          priority: newTask.priority,
+          exp_start_date: newTask.startDate,
+          exp_end_date: newTask.endDate,
+          assigned_to_users: newTask.assignedTo,
           custom_task: 1,
         }
       });
 
 
       await Promise.all([mutateProjects(), mutateTasks()]);
-      setNewSubtask({
+      setNewTask({
         title: '',
         startDate: '',
         endDate: '',
@@ -294,38 +282,38 @@ export default function Heights() {
         assignedTo: [],
         custom_task: 1
       });
-      setShowAddSubtask(prev => ({ ...prev, [projectId]: false }));
+      setShowAddTask(prev => ({ ...prev, [projectId]: false }));
     } catch (error) {
       console.error('Error creating task:', error);
     }
   };
 
 
-  const handleEditSubtask = (projectId, subtaskId) => {
-    // Find the subtask in the project's subtasks array
+  const handleEditTask = (projectId, taskId) => {
+    // Find the subtask in the project's tasks array
     const project = transformedProjects.find(p => p.id === projectId);
-    const subtask = project?.subtasks.find(t => t.id === subtaskId);
+    const task = project?.tasks.find(t => t.id === taskId);
 
-    if (subtask) {
-      setEditingSubtask({ projectId, subtaskId: subtask.id });
+    if (task) {
+      setEditingTask({ projectId, taskId: task.id });
       setEditingValues({
-        title: subtask.title,
-        startDate: subtask.startDate,
-        endDate: subtask.endDate,
-        status: subtask.status,
-        priority: subtask.priority,
-        assignedTo: subtask.assignedTo || [],
+        title: task.title,
+        startDate: task.startDate,
+        endDate: task.endDate,
+        status: task.status,
+        priority: task.priority,
+        assignedTo: task.assignedTo || [],
       });
     }
   };
 
-  const handleUpdate = async (projectId, subtaskId) => {
+  const handleUpdate = async (projectId, taskId) => {
     try {
       const projectData = projects.find(p => p.name === projectId);
 
       await updateTask({
         data: {
-          name: subtaskId,
+          name: taskId,
           project: projectId,
           project_name: projectData?.project_name || '',
           subject: editingValues.title,
@@ -339,16 +327,16 @@ export default function Heights() {
       });
 
       await Promise.all([mutateProjects(), mutateTasks()]);
-      setEditingSubtask(null);
+      setEditingTask(null);
       setEditingValues({});
     } catch (error) {
       console.error('Error updating task:', error);
     }
   };
 
-  const handleDeleteSubtask = async (projectId, subtaskId) => {
+  const handleDeleteTask = async (projectId, taskId) => {
     try {
-      await deleteTask('Task', subtaskId);
+      await deleteTask('Task', taskId);
       await Promise.all([mutateProjects(), mutateTasks()]);
     } catch (error) {
       console.error('Error deleting task:', error);
@@ -356,12 +344,12 @@ export default function Heights() {
   };
 
   const handleCancelEdit = () => {
-    setEditingSubtask(null);
+    setEditingTask(null);
     setEditingValues({});
   };
 
-  const isEditing = (projectId, subtaskId) =>
-    editingSubtask?.projectId === projectId && editingSubtask?.subtaskId === subtaskId;
+  const isEditing = (projectId, taskId) =>
+    editingTask?.projectId === projectId && editingTask?.taskId === taskId;
 
   const handleEditChange = (field, value) => {
     setEditingValues(prev => ({
@@ -505,7 +493,7 @@ export default function Heights() {
                           <Typography
                             component="div"
                             sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: 'pointer', width: "100%" }}
-                            onClick={() => handleToggleSubtasks(project.id)}
+                            onClick={() => handleToggleTasks(project.id)}
                           >
                             <span>{project.project}</span>
                             <div style={{ display: "flex", alignItems: "center" }}>
@@ -513,7 +501,7 @@ export default function Heights() {
                                 {expandedProjectId === project.id ? '▲' : '▼'}
                               </span>
                               <Typography sx={{ fontSize: '0.85em' }}>
-                                Tasks: {project.subtasks.length}
+                                Tasks: {project.tasks.length}
                               </Typography>
                             </div>
                           </Typography>
@@ -525,7 +513,7 @@ export default function Heights() {
                         <TableRow>
                           <TableCell colSpan={2} sx={{ border: 'none', padding: '0 16px' }}>
                             <Table size="small">
-                              {project.subtasks.length !== 0 && (
+                              {project.tasks.length !== 0 && (
                                 <TableHead>
                                   <TableRow>
                                     <TableCell sx={{ border: 'none', fontWeight: 500 }}>Task</TableCell>
@@ -539,7 +527,7 @@ export default function Heights() {
                                 </TableHead>
                               )}
                               <TableBody>
-                                {project.subtasks.length === 0 && !showAddSubtask[project.id] ? (
+                                {project.tasks.length === 0 && !showAddTask[project.id] ? (
                                   <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                       <Typography color="text.secondary">
@@ -547,7 +535,7 @@ export default function Heights() {
                                       </Typography>
                                       <Button
                                         startIcon={<AddIcon />}
-                                        onClick={() => setShowAddSubtask(prev => ({ ...prev, [project.id]: true }))}
+                                        onClick={() => setShowAddTask(prev => ({ ...prev, [project.id]: true }))}
                                         sx={{ padding: "4px 14px" }}
                                       >
                                         Add Task
@@ -556,7 +544,7 @@ export default function Heights() {
                                   </TableRow>
                                 ) : (
                                   <>
-                                    {project.subtasks.map(subtask => (
+                                    {project.tasks.map(subtask => (
                                       <TableRow key={subtask.id} sx={{ bgcolor: 'background.paper', borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }}>
                                         <TableCell onClick={() => handleTaskClick(subtask)} sx={{ cursor: "pointer", border: 'none' }} >
                                           {isEditing(project.id, subtask.id) ? (
@@ -684,10 +672,10 @@ export default function Heights() {
                                             </>
                                           ) : (
                                             <>
-                                              <IconButton onClick={() => handleEditSubtask(project.id, subtask.id)}>
+                                              <IconButton onClick={() => handleEditTask(project.id, subtask.id)}>
                                                 <EditIcon sx={{ color: "green" }} />
                                               </IconButton>
-                                              <IconButton onClick={() => handleDeleteSubtask(project.id, subtask.id)}>
+                                              <IconButton onClick={() => handleDeleteTask(project.id, subtask.id)}>
                                                 <DeleteIcon sx={{ color: "red" }} />
                                               </IconButton>
                                             </>
@@ -698,18 +686,18 @@ export default function Heights() {
                                   </>
                                 )}
 
-                                {showAddSubtask[project.id] && (
+                                {showAddTask[project.id] && (
                                   <TableRow>
                                     <TableCell>
                                       <TextField
-                                        value={newSubtask.title}
-                                        onChange={(e) => setNewSubtask(prev => ({ ...prev, title: e.target.value }))}
+                                        value={newTask.title}
+                                        onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
                                         size="small"
                                         fullWidth
                                         placeholder="Enter subtask name"
                                         onKeyPress={(e) => {
                                           if (e.key === 'Enter') {
-                                            handleAddSubtask(project.id, subtaskId);
+                                            handleAddTask(project.id, taskId);
                                           }
                                         }}
                                       />
@@ -717,8 +705,8 @@ export default function Heights() {
                                     <TableCell>
                                       <TextField
                                         type="date"
-                                        value={newSubtask.startDate}
-                                        onChange={(e) => setNewSubtask(prev => ({ ...prev, startDate: e.target.value }))}
+                                        value={newTask.startDate}
+                                        onChange={(e) => setNewTask(prev => ({ ...prev, startDate: e.target.value }))}
                                         size="small"
                                         fullWidth
                                         InputLabelProps={{ shrink: true }}
@@ -727,8 +715,8 @@ export default function Heights() {
                                     <TableCell>
                                       <TextField
                                         type="date"
-                                        value={newSubtask.endDate}
-                                        onChange={(e) => setNewSubtask(prev => ({ ...prev, endDate: e.target.value }))}
+                                        value={newTask.endDate}
+                                        onChange={(e) => setNewTask(prev => ({ ...prev, endDate: e.target.value }))}
                                         size="small"
                                         fullWidth
                                         InputLabelProps={{ shrink: true }}
@@ -736,8 +724,8 @@ export default function Heights() {
                                     </TableCell>
                                     <TableCell>
                                       <Select
-                                        value={newSubtask.status}
-                                        onChange={(e) => setNewSubtask(prev => ({ ...prev, status: e.target.value }))}
+                                        value={newTask.status}
+                                        onChange={(e) => setNewTask(prev => ({ ...prev, status: e.target.value }))}
                                         size="small"
                                         fullWidth
                                       >
@@ -750,8 +738,8 @@ export default function Heights() {
                                     </TableCell>
                                     <TableCell>
                                       <Select
-                                        value={newSubtask.priority}
-                                        onChange={(e) => setNewSubtask(prev => ({ ...prev, priority: e.target.value }))}
+                                        value={newTask.priority}
+                                        onChange={(e) => setNewTask(prev => ({ ...prev, priority: e.target.value }))}
                                         size="small"
                                         fullWidth
                                       >
@@ -765,8 +753,8 @@ export default function Heights() {
                                     <TableCell>
                                       <Select
                                         multiple
-                                        value={newSubtask.assignedTo}
-                                        onChange={(e) => setNewSubtask(prev => ({ ...prev, assignedTo: e.target.value }))}
+                                        value={newTask.assignedTo}
+                                        onChange={(e) => setNewTask(prev => ({ ...prev, assignedTo: e.target.value }))}
                                         renderValue={(selected) => <EmailAvatars emails={selected} />}
                                         size="small"
                                         fullWidth
@@ -788,22 +776,22 @@ export default function Heights() {
                                       </Select>
                                     </TableCell>
                                     <TableCell>
-                                      <IconButton onClick={() => handleAddSubtask(project.id)}>
+                                      <IconButton onClick={() => handleAddTask(project.id)}>
                                         <CheckIcon sx={{ color: "green" }} />
                                       </IconButton>
-                                      <IconButton onClick={() => setShowAddSubtask(prev => ({ ...prev, [project.id]: false }))}>
+                                      <IconButton onClick={() => setShowAddTask(prev => ({ ...prev, [project.id]: false }))}>
                                         <CloseIcon sx={{ color: "red" }} />
                                       </IconButton>
                                     </TableCell>
                                   </TableRow>
                                 )}
 
-                                {!showAddSubtask[project.id] && project.subtasks.length > 0 && (
+                                {!showAddTask[project.id] && project.tasks.length > 0 && (
                                   <TableRow>
                                     <TableCell colSpan={7}>
                                       <Button
                                         startIcon={<AddIcon />}
-                                        onClick={() => setShowAddSubtask(prev => ({ ...prev, [project.id]: true }))}
+                                        onClick={() => setShowAddTask(prev => ({ ...prev, [project.id]: true }))}
                                         sx={{ mt: 1 }}
                                       >
                                         Add Task
