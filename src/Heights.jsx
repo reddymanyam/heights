@@ -9,9 +9,11 @@ import CloseIcon from "@mui/icons-material/Close";
 const API_URL = "http://localhost:4000/projects";
 
 export default function ProjectManager() {
+
     const [statusOptions, setStatusOptions] = useState([]);
     const [priorityOptions, setPriorityOptions] = useState([]);
     const [assigneeOptions, setAssigneeOptions] = useState([]);
+    
     const [editingSubtask, setEditingSubtask] = useState(null);
 
     const [editingValues, setEditingValues] = useState({
