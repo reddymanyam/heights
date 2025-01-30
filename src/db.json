@@ -31,6 +31,14 @@
       "salary": 120000,
       "number": 9876543210,
       "email": "johndoe@example.com"
+    },
+    {
+      "name": "reddy",
+      "designation": "react",
+      "salary": "123456",
+      "number": "354335756",
+      "email": "reddy123@gmail.com",
+      "id": 5
     }
   ]
 }

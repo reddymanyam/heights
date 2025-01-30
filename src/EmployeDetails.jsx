@@ -1,128 +1,140 @@
-import { TableCell, TextField } from '@mui/material';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from "react";
+import { Table, TableBody, TableRow, TableCell, Button, TextField, Drawer } from "@mui/material";
+
 
 const EmployeDetails = () => {
 
-  const [employeDetails, setemployeDetails] = useState({
-                                                  "name": "",   
-                                                  "designation": "",
-                                                  "salary": "",
-                                                  "number": "",
-                                                  "email": "",
-                                                  "payscale": ""
-                                                  });
-
+  const [open, setOpen] = React.useState(false);
+  const [open1, setOpen1] = React.useState(false);
+  const [employeDetails, setemployeDetails] = useState([]);
   const [editemployeDetails, setEditemployeDetails] = useState({
-                                                   "name": "",   
-                                                  "designation": "",
-                                                  "salary": "",
-                                                  "number": "",
-                                                  "email": "",
-                                                  "payscale": ""
-  })
+    "name": "",
+    "designation": "",
+    "salary": "",
+    "number": "",
+    "email": "",
+    "payscale": ""
+  });
+ 
+  const toggleDrawer = (newOpen) => () => {
+    setOpen(newOpen);
+  };
+
+  const toggleDrawer1 = (newOpen1) => () => {
+    setOpen1(newOpen1);
+  };
 
   const getData = () => {
-    fetch("https://www.employeedetails.com").then((res)=>response)
-                                            .then((data)=> response.json())
-                                            setemployeDetails(data)
-                                            .catch((err) => console.log(err));
+    fetch(" http://localhost:5000/employees").then((res) => res.json())
+      .then((data) => setemployeDetails(data))
+      .catch((err) => console.log(err));
   }
 
-  useEffect(()=>{
+  useEffect(() => {
     getData();
-  },[]);
+  }, []);
 
-  const handleAddTask = () =>{
-      post("https://www.employeedetails.com",{
-        name:employeDetails.name,
-        designation:employeDetails.designation,
-        salary:employeDetails.salary,
-        number:employeDetails.number,
-        email:employeDetails.email,
-        payscale:employeDetails.payscale
-      })
-  }
+  const handleAddTask = () => {
+    fetch(" http://localhost:5000/employees",{
+      method :"POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name:editemployeDetails.name,
+        designation:editemployeDetails.designation,
+        salary:editemployeDetails.salary,
+        number:editemployeDetails.number,
+        email:editemployeDetails.email
+      })    
+    })}
 
-  const handleUpdateTask = () =>{
-    put("https://www.employeedetails.com",{
-      name:editemployeDetails.name,
-      designation:editemployeDetails.designation,
-      salary:editemployeDetails.salary,
-      number:editemployeDetails.number,
-      email:editemployeDetails.email,
-      payscale:editemployeDetails.payscale
+  const handleUpdateTask = () => {
+    put(" http://localhost:5000/employees", {
+      name: editemployeDetails.name,
+      designation: editemployeDetails.designation,
+      salary: editemployeDetails.salary,
+      number: editemployeDetails.number,
+      email: editemployeDetails.email,
     })
   }
+
+  const handleDeleteTask = () => {
+
+  }
+
   return (
     <>
+
       <Table>
-        <Button>handleAddTask</Button>
+        <Button onClick={toggleDrawer(true)}>AddTask</Button>
         <TableRow>
           <TableCell>Name</TableCell>
           <TableCell>Designation</TableCell>
           <TableCell>Salary</TableCell>
           <TableCell>Number</TableCell>
           <TableCell>Email</TableCell>
-          <TableCell>PayScale</TableCell>
-          <Button onclick={habdleEditTask}>handleEditTask</Button>
-          <Button onclick={handleUpdateTask}>handleUpdateTask</Button>
         </TableRow>
         <TableBody>
-          {employeDetails.map((data) => {
-            <>
-            <TableCell>{data.name}</TableCell>
-            <TableCell>{data.designation}</TableCell>
-            <TableCell>{data.salary}</TableCell>
-            <TableCell>{data.number}</TableCell>
-            <TableCell>{data.email}</TableCell>
-            <TableCell>{data.payscale}</TableCell>
-            </>
-          })}
+          {employeDetails.map((data) =>(
+              <TableRow>
+                <TableCell>{data.name}</TableCell>
+                <TableCell>{data.designation}</TableCell>
+                <TableCell>{data.salary}</TableCell>
+                <TableCell>{data.number}</TableCell>
+                <TableCell>{data.email}</TableCell>
+                <Button onClick={toggleDrawer1(true)}>Edit</Button>
+                <Button onclick={handleDeleteTask}>Delete</Button>
+              </TableRow>
+            )
+          )}
         </TableBody>
       </Table>
-      <Drawer>
-           <Table>
-            <TableCell>
-              <TextField value={employeDetails.name} onChange={(e) => setemployeDetails({...employeDetails, name:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={employeDetails.designation} onChange={(e) => setemployeDetails({...employeDetails, designation:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={employeDetails.salary} onChange={(e) => setemployeDetails({...employeDetails, salary:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={employeDetails.number} onChange={(e) => setemployeDetails({...employeDetails, number:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={employeDetails.email} onChange={(e) => setemployeDetails({...employeDetails, email:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={employeDetails.payscale} onChange={(e) => setemployeDetails({...employeDetails, payscale:e.target.value})}></TextField>
-            </TableCell>
-           </Table>
+      <Drawer open={open} >
+        <Button onClick={toggleDrawer(false)}>Close</Button>
+        <Table>
+          <TableCell>
+            <TextField value={editemployeDetails.name} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, name: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.designation} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, designation: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.salary} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, salary: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.number} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, number: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.email} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, email: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.payscale} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, payscale: e.target.value })}></TextField>
+          </TableCell>
+          <Button onClick={handleAddTask}>AddTask</Button>
+        </Table>
       </Drawer>
-      <Drawer>
-           <Table>
-            <TableCell>
-              <TextField value={editemployeDetails.name} onChange={(e) => setEditemployeDetails({...editemployeDetails, name:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={editemployeDetails.designation} onChange={(e) => setEditemployeDetails({...editemployeDetails, designation:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={editemployeDetails.salary} onChange={(e) => setEditemployeDetails({...editemployeDetails, salary:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={editemployeDetails.number} onChange={(e) => setEditemployeDetails({...editemployeDetails, number:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={editemployeDetails.email} onChange={(e) => setEditemployeDetails({...editemployeDetails, email:e.target.value})}></TextField>
-            </TableCell>
-            <TableCell>
-              <TextField value={editemployeDetails.payscale} onChange={(e) => setEditemployeDetails({...editemployeDetails, payscale:e.target.value})}></TextField>
-            </TableCell>
-           </Table>
+      <Drawer open={open1}>
+      <Button onClick={toggleDrawer1(false)}>Close</Button>
+        <Table>
+          <TableCell>
+            <TextField value={employeDetails.name} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, name: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.designation} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, designation: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.salary} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, salary: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.number} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, number: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.email} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, email: e.target.value })}></TextField>
+          </TableCell>
+          <TableCell>
+            <TextField value={editemployeDetails.payscale} onChange={(e) => setEditemployeDetails({ ...editemployeDetails, payscale: e.target.value })}></TextField>
+          </TableCell>
+          <Button onclick={handleUpdateTask}>Update Task</Button>
+        </Table>
       </Drawer>
     </>
   )

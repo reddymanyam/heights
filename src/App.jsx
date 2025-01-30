@@ -1,13 +1,13 @@
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+// import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Heights from './Heights';
-
-const theme = createTheme();
+import EmployeDetails from './EmployeDetails';
+// const theme = createTheme();
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <Heights />
-    </ThemeProvider>
+    <>
+    <EmployeDetails />
+    </>
   );
 }
 
