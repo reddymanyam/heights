@@ -1,103 +1,36 @@
 {
-  "statusOptions": [
-    "Open",
-    "Working",
-    "Pending Review",
-    "Overdue",
-    "Completed",
-    "Cancelled"
-  ],
-  "priorityOptions": [
-    "Low",
-    "Medium",
-    "High",
-    "Urgent"
-  ],
-  "assigneeOptions": [
-    "John Doe",
-    "Jane Smith",
-    "Michael Brown"
-  ],
-  "projects": [
+  "employees": [
     {
       "id": 1,
-      "project": "Website Redesign",
-      "subtasks": [
-        {
-          "id": 1,
-          "title": "Design homepage",
-          "startDate": "2024-01-10",
-          "endDate": "2024-02-25",
-          "status": "Open",
-          "priority": "Medium",
-          "assignedTo": [
-            "John Doe",
-            "Jane Smith"
-          ]
-        },
-        {
-          "id": 2,
-          "title": "Implement navigation bar",
-          "startDate": "2024-01-15",
-          "endDate": "2024-02-01",
-          "status": "Working",
-          "priority": "High",
-          "assignedTo": [
-            "Jane Smith"
-          ]
-        }
-      ]
+      "name": "Reddy",
+      "designation": "React Developer",
+      "salary": 100000,
+      "number": 1234567890,
+      "email": "reddy123@gmail.com"
     },
     {
       "id": 2,
-      "project": "Mobile App Development",
-      "subtasks": [
-        {
-          "id": 1,
-          "title": "Define app features",
-          "startDate": "2024-03-01",
-          "endDate": "2024-03-15",
-          "status": "Open",
-          "priority": "High",
-          "assignedTo": [
-            "Michael Brown"
-          ]
-        }
-      ]
+      "name": "John Doe",
+      "designation": "Backend Developer",
+      "salary": 120000,
+      "number": 9876543210,
+      "email": "johndoe@example.com"
     },
     {
       "id": 3,
-      "project": "Mobile App Development",
-      "subtasks": [
-        {
-          "id": 1,
-          "title": "Define app features",
-          "startDate": "2024-03-01",
-          "endDate": "2024-03-15",
-          "status": "Open",
-          "priority": "High",
-          "assignedTo": [
-            "Michael Brown"
-          ]
-        }
-      ]
+      "name": "Reddy",
+      "designation": "React Developer",
+      "salary": 100000,
+      "number": 1234567890,
+      "email": "reddy123@gmail.com"
     },
     {
-      "project": "python project",
-      "subtasks": [
-        {
-          "title": "code-master",
-          "startDate": "2024-12-28",
-          "endDate": "2025-01-09",
-          "status": "Pending Review",
-          "priority": "High",
-          "assignedTo": [
-            "Michael Brown"
-          ],
-          "id": 1735495880995
-        }
-      ],
-      "id": 1735495855978
+      "id": 4,
+      "name": "John Doe",
+      "designation": "Backend Developer",
+      "salary": 120000,
+      "number": 9876543210,
+      "email": "johndoe@example.com"
     }
   ]
 }
