@@ -72,6 +72,7 @@ def add_custom_task(data):
     task.status = data.get("status")
     task.assigned_to_users = []
     task.parent_task = data.get("parent_task")
+    task.description = data.get("description")
     
     # Handle assignment of users
     for user in data.get("assigned_to_users", []):
