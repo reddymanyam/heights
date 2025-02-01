@@ -2,7 +2,7 @@
   "employees": [
     {
       "id": 1,
-      "name": "Reddy",
+      "name": "Reddys",
       "designation": "React Developer",
       "salary": 100000,
       "number": 1234567890,
@@ -31,6 +31,39 @@
       "salary": 120000,
       "number": 9876543210,
       "email": "johndoe@example.com"
+    },
+    {
+      "name": "reddy",
+      "designation": "react",
+      "salary": "123456",
+      "number": "354335756",
+      "email": "reddy123@gmail.com",
+      "id": 5
+    },
+    {
+      "name": "qwerty",
+      "designation": "wtyty",
+      "salary": "4534654",
+      "number": "46747364",
+      "email": "ertert",
+      "payscale": "53653",
+      "id": 6
+    },
+    {
+      "name": "reddy",
+      "designation": "react",
+      "salary": "123456",
+      "number": "354335756",
+      "email": "reddy123@gmail.com",
+      "id": 9
+    },
+    {
+      "name": "reddy gaadu",
+      "designation": "react gaadu",
+      "salary": "123456",
+      "number": "1234567890",
+      "email": "redy@gmail.com",
+      "id": 10
     }
   ]
 }

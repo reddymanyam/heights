@@ -1,6 +1,8 @@
 // filters for tasks..............
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import React, { useState } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Button, IconButton, Box, Typography, Select, MenuItem, Tabs, Tab, Drawer, Chip, List, ListItem, Avatar, FormControl, InputLabel } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Button, IconButton, Box, Typography, Select, MenuItem, Tabs, Tab, Drawer, Chip, List, ListItem, Avatar, FormControl, InputLabel, styled } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
@@ -9,7 +11,7 @@ import AddIcon from '@mui/icons-material/Add';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import Navbar from '../../shared/navbar/Navbar';
 import General from './General';
-import { useFrappeGetDocList, useFrappeCreateDoc, useFrappeDeleteDoc, useFrappeGetCall, useFrappePostCall } from 'frappe-react-sdk';
+import { useFrappeGetDocList, useFrappeCreateDoc, useFrappeGetCall, useFrappePostCall } from 'frappe-react-sdk';
 import EmailAvatars from './EmailAvatars';
 import SubtaskDrawer from './SubtaskDrawer';
 
@@ -50,6 +52,10 @@ const getPriorityStyle = (priority) => {
   }
 };
 
+const CustomTableCell = styled(TableCell)(({ theme }) => ({   //created this to remove the duplicate styling of table cell
+  border: 'none',
+  fontWeight: 500,
+}));
 
 export default function Heights() {
   const [activeTab, setActiveTab] = useState(0);
@@ -70,7 +76,10 @@ export default function Heights() {
   const [selectedTask, setSelectedTask] = useState(null);
 
   const handleTaskClick = (task) => {
-    setSelectedTask(task);
+    setSelectedTask({
+      ...task,
+      project: task.project_name  
+    });
     setDrawerOpen(true);
   };
 
@@ -82,6 +91,7 @@ export default function Heights() {
     status: '',
     priority: '',
     assignedTo: [],
+    description: '',
     custom_task: 1
   });
 
@@ -98,69 +108,70 @@ export default function Heights() {
   const { createDoc: createProject } = useFrappeCreateDoc();
   const { data: tasks, mutate: mutateTasks } = useFrappeGetCall('novelite_us.novelite_us.api.Land_Acquisitions.tasksList.fetch.get_all_custom_tasks');
   const { call: updateTask } = useFrappePostCall('novelite_us.novelite_us.api.Land_Acquisitions.tasksList.fetch.add_custom_task');
-  const { deleteDoc: deleteTask } = useFrappeDeleteDoc();
+  const { call: deleteTask } = useFrappePostCall('novelite_us.novelite_us.api.Land_Acquisitions.tasksList.delete_task.delete_task?task_id=TASK - 003355');
 
-// ------------------------------------------------------ Subtasks Section Start ------------------------------------------------------
+  // ------------------------------------------------------ Subtasks Section Start ------------------------------------------------------
   const createSubtask = async (subtaskData) => {
     try {
-        const result = await updateTask({
-            data: {
-                ...subtaskData,
-                custom_task: 1
-            }
-        });
-
-        // Refresh tasks
-        await mutateTasks();
-
-        return result;
-    } catch (error) {
-        console.error('Error creating subtask:', error);
-        throw error;
-    }
-};
-
-const updateSubtask = async (subtaskId, updatedData) => {
-  try {
       const result = await updateTask({
-          data: {
-              name: subtaskId,
-              ...updatedData,
-              custom_task: 1
-          }
+        data: {
+          ...subtaskData,
+          custom_task: 1
+        }
       });
 
       // Refresh tasks
       await mutateTasks();
 
       return result;
-  } catch (error) {
-      console.error('Error updating subtask:', error);
+    } catch (error) {
+      console.error('Error creating subtask:', error);
       throw error;
-  }
-};
+    }
+  };
 
-const deleteSubtask = async (subtaskId) => {
-  try {
-      await deleteTask('Task', subtaskId);
+  const updateSubtask = async (subtaskId, updatedData) => {
+    try {
+      const result = await updateTask({
+        data: {
+          ...updatedData,
+          name: subtaskId,
+          custom_task: 1
+        }
+      });
 
       // Refresh tasks
       await mutateTasks();
-  } catch (error) {
+
+      return result;
+    } catch (error) {
+      console.error('Error updating subtask:', error);
+      throw error;
+    }
+  };
+
+  const deleteSubtask = async (subtaskId) => {
+    try {
+      await deleteTask({ task_id: subtaskId });
+
+      // Refresh tasks
+      await mutateTasks();
+    } catch (error) {
       console.error('Error deleting subtask:', error);
       throw error;
-  }
-};
-//------------------------------------------------------ Subtasks Section End ------------------------------------------------------
+    }
+  };
 
   // Method to fetch subtasks for a specific task
   const fetchSubtasksForTask = (parentTaskId) => {
     if (!tasks || !tasks.message) return [];
 
-    return tasks.message.filter(task => 
-        task.parent_task === parentTaskId && task.custom_task === 1
+    return tasks.message.filter(task =>
+      task.parent_task === parentTaskId && task.custom_task === 1
     );
-};
+  };
+
+  //------------------------------------------------------ Subtasks Section End ------------------------------------------------------
 
   let parentTasks = [];
 
@@ -191,12 +202,15 @@ const deleteSubtask = async (subtaskId) => {
           priority: task.priority,
           assignedTo: task.assigned_to_users ? task.assigned_to_users : [],
           project_name: task.project,
+          description: task.description,
           isParentTask: true // Add a flag to distinguish parent tasks
         })) || []),
 
       ]
     }));
   }, [projects, tasks]);
+  // console.log(tasks,'tasks');
+
 
   const filteredProjects = React.useMemo(() => {
     if (!transformedProjects) return [];
@@ -225,6 +239,7 @@ const deleteSubtask = async (subtaskId) => {
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
+    mutateTasks();
   };
 
   const handleToggleTasks = (projectId) => {
@@ -272,7 +287,8 @@ const deleteSubtask = async (subtaskId) => {
       });
 
 
-      await Promise.all([mutateProjects(), mutateTasks()]);
+      await Promise.all([mutateProjects(), mutateTasks()]);  //promise.all is used to run the different promises at the same time parallelly
+
       setNewTask({
         title: '',
         startDate: '',
@@ -283,20 +299,22 @@ const deleteSubtask = async (subtaskId) => {
         custom_task: 1
       });
       setShowAddTask(prev => ({ ...prev, [projectId]: false }));
+      toast.success('Task added successfully!');
     } catch (error) {
       console.error('Error creating task:', error);
+      alert('Failed to add task!');
     }
   };
 
 
   const handleEditTask = (projectId, taskId) => {
-    // Find the subtask in the project's tasks array
+    // Find the task in the project's tasks array
     const project = transformedProjects.find(p => p.id === projectId);
     const task = project?.tasks.find(t => t.id === taskId);
 
     if (task) {
       setEditingTask({ projectId, taskId: task.id });
-      setEditingValues({
+      setEditingValues({                                //or we can simply write setEditingValues(task)
         title: task.title,
         startDate: task.startDate,
         endDate: task.endDate,
@@ -326,20 +344,29 @@ const deleteSubtask = async (subtaskId) => {
         }
       });
 
+      // console.log('Task updated successfully',taskId,projectId,projectData?.project_name,editingValues.title,editingValues.status,editingValues.priority,editingValues.startDate,editingValues.endDate,editingValues.assignedTo);
+
+
       await Promise.all([mutateProjects(), mutateTasks()]);
       setEditingTask(null);
       setEditingValues({});
+      toast.success('Task updated successfully!');
     } catch (error) {
       console.error('Error updating task:', error);
+      alert('Failed to update task!');
     }
   };
 
-  const handleDeleteTask = async (projectId, taskId) => {
+  const handleDeleteTask = async (taskId) => {
     try {
-      await deleteTask('Task', taskId);
-      await Promise.all([mutateProjects(), mutateTasks()]);
-    } catch (error) {
+      await deleteTask({ task_id: taskId });
+      await mutateTasks();
+      toast.success('Task deleted successfully!');
+    }
+    catch (error) {
       console.error('Error deleting task:', error);
+      alert('Failed to delete task!');
+      throw error;
     }
   };
 
@@ -516,13 +543,9 @@ const deleteSubtask = async (subtaskId) => {
                               {project.tasks.length !== 0 && (
                                 <TableHead>
                                   <TableRow>
-                                    <TableCell sx={{ border: 'none', fontWeight: 500 }}>Task</TableCell>
-                                    <TableCell sx={{ border: 'none', fontWeight: 500 }}>Start Date</TableCell>
-                                    <TableCell sx={{ border: 'none', fontWeight: 500 }}>End Date</TableCell>
-                                    <TableCell sx={{ border: 'none', fontWeight: 500 }}>Status</TableCell>
-                                    <TableCell sx={{ border: 'none', fontWeight: 500 }}>Priority</TableCell>
-                                    <TableCell sx={{ border: 'none', fontWeight: 500 }}>Assigned To</TableCell>
-                                    <TableCell sx={{ border: 'none', fontWeight: 500 }}>Actions</TableCell>
+                                    {['Task', 'Start Date', 'End Date', 'Status', 'Priority', 'Assigned To', 'Actions'].map((columnName) => (
+                                      <CustomTableCell key={columnName}>{columnName}</CustomTableCell>
+                                    ))}
                                   </TableRow>
                                 </TableHead>
                               )}
@@ -544,20 +567,20 @@ const deleteSubtask = async (subtaskId) => {
                                   </TableRow>
                                 ) : (
                                   <>
-                                    {project.tasks.map(subtask => (
-                                      <TableRow key={subtask.id} sx={{ bgcolor: 'background.paper', borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }}>
-                                        <TableCell onClick={() => handleTaskClick(subtask)} sx={{ cursor: "pointer", border: 'none' }} >
-                                          {isEditing(project.id, subtask.id) ? (
+                                    {project.tasks.map(task => (
+                                      <TableRow key={task.id} sx={{ bgcolor: 'background.paper', borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }}>
+                                        <TableCell onClick={() => handleTaskClick(task)} sx={{ cursor: "pointer", border: 'none' }} >
+                                          {isEditing(project.id, task.id) ? (
                                             <TextField
                                               value={editingValues.title}
                                               onChange={(e) => handleEditChange('title', e.target.value)}
                                               size="small"
                                               fullWidth
                                             />
-                                          ) : subtask.title}
+                                          ) : task.title}
                                         </TableCell>
                                         <TableCell sx={{ border: 'none' }}>
-                                          {isEditing(project.id, subtask.id) ? (
+                                          {isEditing(project.id, task.id) ? (
                                             <TextField
                                               type="date"
                                               value={editingValues.startDate}
@@ -567,10 +590,10 @@ const deleteSubtask = async (subtaskId) => {
                                               InputLabelProps={{ shrink: true }}
                                               sx={{ border: 'none' }}
                                             />
-                                          ) : subtask.startDate}
+                                          ) : task.startDate}
                                         </TableCell>
                                         <TableCell sx={{ border: 'none' }}>
-                                          {isEditing(project.id, subtask.id) ? (
+                                          {isEditing(project.id, task.id) ? (
                                             <TextField
                                               type="date"
                                               value={editingValues.endDate}
@@ -580,10 +603,10 @@ const deleteSubtask = async (subtaskId) => {
                                               InputLabelProps={{ shrink: true }}
                                               sx={{ border: 'none' }}
                                             />
-                                          ) : subtask.endDate}
+                                          ) : task.endDate}
                                         </TableCell>
                                         <TableCell sx={{ border: 'none' }}>
-                                          {isEditing(project.id, subtask.id) ? (
+                                          {isEditing(project.id, task.id) ? (
                                             <Select
                                               value={editingValues.status}
                                               onChange={(e) => handleEditChange('status', e.target.value)}
@@ -591,6 +614,7 @@ const deleteSubtask = async (subtaskId) => {
                                               fullWidth
                                               sx={{ border: 'none' }}
                                             >
+                                              <MenuItem value="" disabled>Status</MenuItem>
                                               {statusOptions.map(status => (
                                                 <MenuItem key={status} value={status}>
                                                   {status}
@@ -599,15 +623,15 @@ const deleteSubtask = async (subtaskId) => {
                                             </Select>
                                           ) : (
                                             <Chip
-                                              label={subtask.status}
+                                              label={task.status}
                                               size="small"
-                                              sx={{ ...getStatusStyle(subtask.status) }}
+                                              sx={{ ...getStatusStyle(task.status) }}
                                             />
                                           )}
                                         </TableCell>
 
                                         <TableCell sx={{ border: 'none' }}>
-                                          {isEditing(project.id, subtask.id) ? (
+                                          {isEditing(project.id, task.id) ? (
                                             <Select
                                               value={editingValues.priority}
                                               onChange={(e) => handleEditChange('priority', e.target.value)}
@@ -615,6 +639,7 @@ const deleteSubtask = async (subtaskId) => {
                                               fullWidth
                                               sx={{ border: 'none' }}
                                             >
+                                              <MenuItem value="" disabled>Priority</MenuItem>
                                               {priorityOptions.map(priority => (
                                                 <MenuItem key={priority} value={priority}>
                                                   {priority}
@@ -623,15 +648,15 @@ const deleteSubtask = async (subtaskId) => {
                                             </Select>
                                           ) : (
                                             <Chip
-                                              label={subtask.priority}
+                                              label={task.priority}
                                               size="small"
-                                              sx={{ ...getPriorityStyle(subtask.priority) }}
+                                              sx={{ ...getPriorityStyle(task.priority) }}
                                             />
                                           )}
                                         </TableCell>
 
                                         <TableCell sx={{ maxWidth: 150, border: 'none' }}>
-                                          {isEditing(project.id, subtask.id) ? (
+                                          {isEditing(project.id, task.id) ? (
                                             <Select
                                               multiple
                                               value={editingValues.assignedTo}
@@ -657,13 +682,13 @@ const deleteSubtask = async (subtaskId) => {
                                               ))}
                                             </Select>
                                           ) : (
-                                            <EmailAvatars emails={subtask.assignedTo} />
+                                            <EmailAvatars emails={task.assignedTo} />
                                           )}
                                         </TableCell>
                                         <TableCell sx={{ border: 'none' }}>
-                                          {isEditing(project.id, subtask.id) ? (
+                                          {isEditing(project.id, task.id) ? (
                                             <>
-                                              <IconButton onClick={() => handleUpdate(project.id, subtask.id)}>
+                                              <IconButton onClick={() => handleUpdate(project.id, task.id)}>
                                                 <CheckIcon sx={{ color: "green" }} />
                                               </IconButton>
                                               <IconButton onClick={handleCancelEdit}>
@@ -672,10 +697,10 @@ const deleteSubtask = async (subtaskId) => {
                                             </>
                                           ) : (
                                             <>
-                                              <IconButton onClick={() => handleEditTask(project.id, subtask.id)}>
+                                              <IconButton onClick={() => handleEditTask(project.id, task.id)}>
                                                 <EditIcon sx={{ color: "green" }} />
                                               </IconButton>
-                                              <IconButton onClick={() => handleDeleteTask(project.id, subtask.id)}>
+                                              <IconButton onClick={() => handleDeleteTask(task.id)}>
                                                 <DeleteIcon sx={{ color: "red" }} />
                                               </IconButton>
                                             </>
@@ -694,7 +719,7 @@ const deleteSubtask = async (subtaskId) => {
                                         onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
                                         size="small"
                                         fullWidth
-                                        placeholder="Enter subtask name"
+                                        placeholder="Enter task name"
                                         onKeyPress={(e) => {
                                           if (e.key === 'Enter') {
                                             handleAddTask(project.id, taskId);
@@ -728,7 +753,9 @@ const deleteSubtask = async (subtaskId) => {
                                         onChange={(e) => setNewTask(prev => ({ ...prev, status: e.target.value }))}
                                         size="small"
                                         fullWidth
+                                        displayEmpty
                                       >
+                                        <MenuItem value="" disabled>Status</MenuItem>
                                         {statusOptions.map(status => (
                                           <MenuItem key={status} value={status}>
                                             {status}
@@ -742,7 +769,9 @@ const deleteSubtask = async (subtaskId) => {
                                         onChange={(e) => setNewTask(prev => ({ ...prev, priority: e.target.value }))}
                                         size="small"
                                         fullWidth
+                                        displayEmpty
                                       >
+                                        <MenuItem value="" disabled>Priority</MenuItem>
                                         {priorityOptions.map(priority => (
                                           <MenuItem key={priority} value={priority}>
                                             {priority}
@@ -811,7 +840,16 @@ const deleteSubtask = async (subtaskId) => {
             </TableContainer>
           )}
           {activeTab === 1 && (
-            <General getStatusStyle={getStatusStyle} getPriorityStyle={getPriorityStyle} />
+            <General
+              getStatusStyle={getStatusStyle}
+              getPriorityStyle={getPriorityStyle}
+              fetchSubtasks={fetchSubtasksForTask}
+              createSubtask={createSubtask}
+              updateSubtask={updateSubtask}
+              deleteSubtask={deleteSubtask}
+              selectedTask={selectedTask}
+              CustomTableCell={CustomTableCell}
+            />
           )}
         </Box>
         {/* Subtasks Drawer */}
@@ -828,7 +866,10 @@ const deleteSubtask = async (subtaskId) => {
           createSubtask={createSubtask}
           updateSubtask={updateSubtask}
           deleteSubtask={deleteSubtask}
+          updateTask={updateTask}
         />
+
+        <ToastContainer position="top-center" autoClose={1000} />  { /* toastify is used to show the toast messages*/}
       </Box>
     </>
   );
