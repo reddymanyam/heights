@@ -2,7 +2,7 @@
   "employees": [
     {
       "id": 1,
-      "name": "Reddy",
+      "name": "Reddys",
       "designation": "React Developer",
       "salary": 100000,
       "number": 1234567890,
@@ -50,22 +50,6 @@
       "id": 6
     },
     {
-      "name": "etrwgter",
-      "designation": "tyeytyth",
-      "salary": "",
-      "number": "",
-      "email": "",
-      "id": 7
-    },
-    {
-      "name": "dfsdgfdgv",
-      "designation": "",
-      "salary": "",
-      "number": "",
-      "email": "",
-      "id": 8
-    },
-    {
       "name": "reddy",
       "designation": "react",
       "salary": "123456",
@@ -80,17 +64,6 @@
       "number": "1234567890",
       "email": "redy@gmail.com",
       "id": 10
-    },
-    {
-      "id": 11
-    },
-    {
-      "name": "dsgfsg",
-      "id": 12
-    },
-    {
-      "name": "fgfdgdfdghfdg",
-      "id": 13
     }
   ]
 }
