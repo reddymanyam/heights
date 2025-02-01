@@ -1,13 +1,27 @@
 // import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Heights from './Heights';
+import EmployeDetails from './EmployeDetails';
+<<<<<<< HEAD
 
-const theme = createTheme();
+=======
+>>>>>>> 4720c89441537a8e31e2e56b24cce09660291378
+// const theme = createTheme();
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <Heights />
-    </ThemeProvider>
+<<<<<<< HEAD
+    // <ThemeProvider theme={theme}>
+    //   <Heights />
+    // </ThemeProvider>
+    <>
+      <EmployeDetails />
+    </>
+
+=======
+    <>
+    <EmployeDetails />
+    </>
+>>>>>>> 4720c89441537a8e31e2e56b24cce09660291378
   );
 }
 
