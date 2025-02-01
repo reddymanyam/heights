@@ -76,7 +76,10 @@ export default function Heights() {
   const [selectedTask, setSelectedTask] = useState(null);
 
   const handleTaskClick = (task) => {
-    setSelectedTask(task);
+    setSelectedTask({
+      ...task,
+      project: task.project_name  
+    });
     setDrawerOpen(true);
   };
 
@@ -311,7 +314,7 @@ export default function Heights() {
 
     if (task) {
       setEditingTask({ projectId, taskId: task.id });
-      setEditingValues({
+      setEditingValues({                                //or we can simply write setEditingValues(task)
         title: task.title,
         startDate: task.startDate,
         endDate: task.endDate,
