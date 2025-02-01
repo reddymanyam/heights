@@ -65,7 +65,7 @@ const EmployeDetails = () => {
   }
 
   const handleUpdateTask = () => {
-   fetch(`http://localhost:5000/employees${editemployeDetails.id}`,{
+   fetch(`http://localhost:5000/employees/${editemployeDetails.id}`,{
     method:"PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -88,11 +88,17 @@ const EmployeDetails = () => {
      )
    
    setOpen1(false);
-   console.log("button is clicked................");
   }
+  
 
-  const handleDeleteTask = () => {
-
+  const handleDeleteTask = (id) => {
+      fetch(`http://localhost:5000/employees/${id}`,{
+        method:"DELETE",
+        headers: { "Content-Type": "application/json" }
+      }).then(()=>setemployeDetails(prevValue =>(prevValue.filter((employee)=>(        //filter always returns the boolean value, not the complete array
+        employee.id !== id
+      )))))
+        .catch((err) => console.log(err.message))
   }
 
   return (
@@ -106,6 +112,7 @@ const EmployeDetails = () => {
           <TableCell>Salary</TableCell>
           <TableCell>Number</TableCell>
           <TableCell>Email</TableCell>
+          <TableCell sx={{marginLeft:"50px"}}>Actions</TableCell>
         </TableRow>
         <TableBody>
           {employeDetails.map((data) =>(
@@ -119,7 +126,7 @@ const EmployeDetails = () => {
                   setEditemployeDetails({...data});
                   setOpen1(true);
                 }}>Edit</Button>
-                <Button onClick={handleDeleteTask}>Delete</Button>
+                <Button onClick={() => handleDeleteTask(data.id)}>Delete</Button>
               </TableRow>
             )
           )}
