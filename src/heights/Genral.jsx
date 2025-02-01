@@ -21,12 +21,12 @@ const statusOptions = ['Open', 'Working', 'Pending Review', 'Overdue', 'Complete
 const priorityOptions = ['Low', 'Medium', 'High', 'Urgent'];
 
 export default function General({ getStatusStyle, getPriorityStyle, createSubtask, updateSubtask, deleteSubtask, CustomTableCell }) {
-  const [showAddTask, setShowAddTask] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);      //for addtask button (to add tasks)
   const [editingTask, setEditingTask] = useState(null);
-  const [editingValues, setEditingValues] = useState({});
+  const [editingValues, setEditingValues] = useState({});     //for addtask, updating task, updating subtask, 
   const [tasks, setTasks] = useState([]);
-  const [expandedTask, setExpandedTask] = useState(null);
-  const [showAddSubtask, setShowAddSubtask] = useState(null);
+  const [expandedTask, setExpandedTask] = useState(null);     //for subtasks expansion panel (to see subtasks)
+  const [showAddSubtask, setShowAddSubtask] = useState(null); //for subtasks add button (to add subtasks)
   const [editingSubtask, setEditingSubtask] = useState(null);
 
   const userEmail = Cookies.get('user_id');
@@ -455,7 +455,7 @@ export default function General({ getStatusStyle, getPriorityStyle, createSubtas
 
                         {showAddSubtask === task.name && (
                           <Box>
-                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', columnGap: 4 }}>
                               <TextField
                                 label="Title"
                                 value={newSubtask.title}
@@ -555,7 +555,7 @@ export default function General({ getStatusStyle, getPriorityStyle, createSubtas
                                         />
                                       ) : subtask.subject}
                                     </TableCell>
-                                    <TableCell style={{ border: "none" }}>
+                                    <TableCell style={{ border: "none"}}>
                                       {editingSubtask === subtask.name ? (
                                         <TextField
                                           type="date"
