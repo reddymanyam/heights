@@ -6,14 +6,22 @@ const EmployeDetails = () => {
 
   const [open, setOpen] = React.useState(false);
   const [open1, setOpen1] = React.useState(false);
-  const [employeDetails, setemployeDetails] = useState([]);
+  const [employeDetails, setEmployeDetails] = useState([]);
   const [editemployeDetails, setEditemployeDetails] = useState({
     "name": "",
     "designation": "",
     "salary": "",
     "number": "",
     "email": "",
-    "payscale": ""
+  });
+
+  const [subEmployeDetails, setSubEmployeDetails] = useState([]);
+  const [editsubEmployeDetails, setEditsubEmployeDetails ] = useState({
+    "name": "",
+    "designation":"",
+    "salary":"",
+    "number":"",
+    "email":"",
   });
  
   const toggleDrawer = (newOpen) => () => {
@@ -26,7 +34,7 @@ const EmployeDetails = () => {
 
   const getData = () => {
     fetch("http://localhost:5000/employees").then((res) => res.json())
-      .then((data) => setemployeDetails(data))
+      .then((data) => setEmployeDetails(data))
       .catch((err) => console.log(err));
   }
 
@@ -95,7 +103,7 @@ const EmployeDetails = () => {
       fetch(`http://localhost:5000/employees/${id}`,{
         method:"DELETE",
         headers: { "Content-Type": "application/json" }
-      }).then(()=>setemployeDetails(prevValue =>(prevValue.filter((employee)=>(        //filter always returns the boolean value, not the complete array
+      }).then(()=>setEmployeDetails(prevValue =>(prevValue.filter((employee)=>(        //filter always returns the boolean value, not the complete array
         employee.id !== id
       )))))
         .catch((err) => console.log(err.message))
