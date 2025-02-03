@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, TableBody, TableRow, TableCell, Button, TextField, Drawer } from "@mui/material";
+import { Table, TableBody, TableRow, TableCell, Button, TextField, Drawer, TableHead } from "@mui/material";
 
 
 const EmployeDetails = () => {
@@ -150,7 +150,7 @@ const EmployeDetails = () => {
                 </TableCell>
               </TableRow>
               {
-                selectOpen[data.id] && (
+                selectOpen[index] && (
                   <TableRow>
                     <TableCell colSpan={6} sx={{ background: "#f9f9f9" }}>
                       <strong>Subtasks for {data.name}</strong>
