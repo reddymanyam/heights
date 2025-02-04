@@ -1,6 +1,6 @@
 // filters for tasks..............
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Button, IconButton, Box, Typography, Select, MenuItem, Tabs, Tab, Drawer, Chip, List, ListItem, Avatar, FormControl, InputLabel, styled } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -78,7 +78,7 @@ export default function Heights() {
   const handleTaskClick = (task) => {
     setSelectedTask({
       ...task,
-      project: task.project_name  
+      project: task.project_name
     });
     setDrawerOpen(true);
   };
@@ -353,7 +353,7 @@ export default function Heights() {
       toast.success('Task updated successfully!');
     } catch (error) {
       console.error('Error updating task:', error);
-      alert('Failed to update task!');
+      toast.error('Failed to update task!');
     }
   };
 
@@ -365,8 +365,7 @@ export default function Heights() {
     }
     catch (error) {
       console.error('Error deleting task:', error);
-      alert('Failed to delete task!');
-      throw error;
+      toast.error('Failed to delete task!');
     }
   };
 
@@ -383,6 +382,22 @@ export default function Heights() {
       ...prev,
       [field]: value
     }));
+  };
+
+  const onTaskUpdate = (updatedTask) => {
+    // Update the tasks list with the new task data
+    if (tasks && tasks.message) {
+      const updatedTasks = {
+        ...tasks,
+        message: tasks.message.map(task =>
+          task.name === updatedTask.id ? {
+            ...task,
+            description: updatedTask.description
+          } : task
+        )
+      };
+      mutateTasks(updatedTasks);
+    }
   };
 
   return (
@@ -473,7 +488,7 @@ export default function Heights() {
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ fontSize: "16px", fontWeight: 500, border: 'none' }}>Projects</TableCell>
-                    <TableCell sx={{ display: "flex", justifyContent: "flex-end", border: 'none' }}>
+                    {/* <TableCell sx={{ display: "flex", justifyContent: "flex-end", border: 'none' }}>
                       <Button
                         variant="contained"
                         startIcon={<AddIcon />}
@@ -482,7 +497,7 @@ export default function Heights() {
                       >
                         Add Project
                       </Button>
-                    </TableCell>
+                    </TableCell> */}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -867,9 +882,11 @@ export default function Heights() {
           updateSubtask={updateSubtask}
           deleteSubtask={deleteSubtask}
           updateTask={updateTask}
+          onTaskUpdate={onTaskUpdate}
+          toast={toast}
         />
 
-        <ToastContainer position="top-center" autoClose={1000} />  { /* toastify is used to show the toast messages*/}
+        <ToastContainer position="top-center" autoClose={1000} style={{ zIndex: 9999 }} limit={1} />  { /* toastify is used to show the toast messages*/}
       </Box>
     </>
   );
