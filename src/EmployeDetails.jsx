@@ -116,6 +116,13 @@ const EmployeDetails = () => {
   const handleOpen = (id) => {
     setSelectOpen((prev) => ({ ...prev, [id]: !prev[id] }));
   }
+  
+  const handleChange = (field, value) =>{          //use this in edit section, instead of using onchange={(e) =>setEditemployeDetails({...editemployeDetails, name:e.target.value})}
+    setEditemployeDetails((prev =>({               // so, by using this we can simply write onchange={(e)=>handleChange('name', e.target.value)}
+      ...prev,
+      [field]:value
+    })));
+  };
 
   return (
     <>
