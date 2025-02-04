@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
     Box, Typography, Button, TextField, Select, MenuItem,
     List, ListItem,
     IconButton, Drawer, Chip,
+    Collapse,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import AddIcon from '@mui/icons-material/Add';
@@ -12,6 +12,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import EmailAvatars from './EmailAvatars';
 
 const SubtaskDrawer = ({
@@ -28,12 +30,17 @@ const SubtaskDrawer = ({
     updateSubtask,
     deleteSubtask,
     updateTask,
+    toast
 }) => {
     const [subtasks, setSubtasks] = useState([]);
-    const [showAddSubtask, setShowAddSubtask] = useState(false);
-    const [editingSubtask, setEditingSubtask] = useState(null);
+    const [showAddSubtask, setShowAddSubtask] = useState(false); // Show/hide add subtask form
+    const [editingSubtask, setEditingSubtask] = useState(null);  // ID of the subtask being edited
     const [searchTerm, setSearchTerm] = useState('');
-    const [description, setDescription] = useState('');
+    const [description, setDescription] = useState('');         // Description of the selected task
+    const [expandedSubtask, setExpandedSubtask] = useState(null);  // Show/hide description this is for subtasks
+    const [subtaskDescriptions, setSubtaskDescriptions] = useState({}); // Description of the selected subtask
+    const [localSelectedTask, setLocalSelectedTask] = useState(null);
+
 
     // Fetch subtasks when drawer opens or selected task changes
     useEffect(() => {
@@ -79,7 +86,7 @@ const SubtaskDrawer = ({
         )
         .map(user => user.email) || [];
 
-    const [newSubtask, setNewSubtask] = useState({
+    const [newSubtask, setNewSubtask] = useState({         //new subtask values
         subject: '',
         title: '',
         status: '',
@@ -91,7 +98,7 @@ const SubtaskDrawer = ({
         parent_task: selectedTask?.id
     });
 
-    const [editValues, setEditValues] = useState({});
+    const [editValues, setEditValues] = useState({});        //editing subtask values
 
     const handleAddSubtask = async () => {
         if (!newSubtask.title.trim()) return;
@@ -152,7 +159,7 @@ const SubtaskDrawer = ({
             toast.success('Subtask added successfully!');
         } catch (error) {
             console.error('Error creating subtask:', error);
-            alert('Failed to add Subtask!');
+            toast.error('Failed to add Subtask!');
         }
     };
 
@@ -233,37 +240,103 @@ const SubtaskDrawer = ({
         }));
     };
 
-    useEffect(() => {
-        if (selectedTask && open) {
-            setDescription(selectedTask.description || '');
-        }
-    }, [selectedTask, open]);
-
+    
     // function to handle description update
     const handleDescriptionUpdate = async () => {
         try {
+            const updatedTaskData = {
+                name: selectedTask.id,
+                description: description,
+                subject: selectedTask.title,
+                status: selectedTask.status,
+                priority: selectedTask.priority,
+                exp_start_date: selectedTask.startDate,
+                exp_end_date: selectedTask.endDate,
+                assigned_to_users: selectedTask.assignedTo,
+                parent_task: selectedTask.parent_task,
+                project: selectedTask.project,
+                project_name: selectedTask.project_name,
+                custom_task: 1
+            };
+            
             await updateTask({
-                data: {
-                    name: selectedTask.id,
-                    description: description,  // Use the description from state
-                    subject: selectedTask.title,
-                    status: selectedTask.status,
-                    priority: selectedTask.priority,
-                    exp_start_date: selectedTask.startDate,
-                    exp_end_date: selectedTask.endDate,
-                    assigned_to_users: selectedTask.assignedTo,
-                    parent_task: selectedTask.parent_task,
-                    project: selectedTask.project, 
-                    project_name: selectedTask.project_name,
-                    custom_task: 1
-                }
+                data: updatedTaskData
             });
-            alert('Description updated successfully!:');
+
+            // Update local state to reflect changes
+            setLocalSelectedTask(prev => ({
+                ...prev,
+                description: description
+            }));
+
+            // Update parent component's state by passing the updated task data
+            if (typeof onTaskUpdate === 'function') {
+                onTaskUpdate({
+                    ...selectedTask,
+                    description: description
+                });
+            }
+
+            toast.success('Description updated successfully!');
         } catch (error) {
             console.error('Error updating description:', error);
-            alert('Failed to update description');
+            toast.error('Failed to update description');
+            // Revert description to original value on error
+            setDescription(selectedTask.description || '');
         }
     };
+    
+    // Update local task state when selectedTask changes
+    useEffect(() => {
+        if (selectedTask && open) {
+            setDescription(selectedTask.description || '');
+            setLocalSelectedTask(selectedTask);
+        }
+    }, [selectedTask, open]);
+
+    const handleSubtaskDescriptionChange = async (subtaskId, newDescription) => {
+        setSubtaskDescriptions(prev => ({
+            ...prev,
+            [subtaskId]: newDescription
+        }));
+    };
+
+    const handleSaveSubtaskDescription = async (subtaskId) => {
+        try {
+            const subtask = subtasks.find(s => s.id === subtaskId);
+            if (!subtask) return;
+
+            const updatedSubtaskData = {
+                name: subtaskId,
+                subject: subtask.title,
+                status: subtask.status,
+                priority: subtask.priority,
+                exp_start_date: subtask.exp_start_date,
+                exp_end_date: subtask.exp_end_date,
+                assigned_to_users: subtask.assignedTo,
+                description: subtaskDescriptions[subtaskId],
+                parent_task: selectedTask.id,
+                custom_task: 1,
+            };
+
+            await updateSubtask(subtaskId, updatedSubtaskData);
+            toast.success('Subtask description updated successfully!');
+        } catch (error) {
+            console.error('Error updating subtask description:', error);
+            toast.error('Failed to update subtask description');
+        }
+    };
+
+    useEffect(() => {
+        // Initialize subtask descriptions when subtasks are loaded
+        if (subtasks.length > 0) {
+            const descriptions = {};
+            subtasks.forEach(subtask => {
+                descriptions[subtask.id] = subtask.description || '';
+            });
+            setSubtaskDescriptions(descriptions);
+        }
+    }, [subtasks]);
 
     return (
         <Drawer
@@ -395,7 +468,7 @@ const SubtaskDrawer = ({
 
                 {/* Subtasks List */}
                 <List sx={{ flex: 1, overflow: 'auto' }}>
-                    {(subtasks).map(subtask => (
+                    {(subtasks).map((subtask) => (
                         <ListItem
                             key={subtask.id}
                             sx={{
@@ -481,9 +554,21 @@ const SubtaskDrawer = ({
                                     </Grid>
                                 </Grid>
                             ) : (
-                                <Box sx={{ flexGrow: 1 }}>
+                                <Box sx={{ width: '100%' }}>
                                     <Grid container spacing={2} alignItems="center">
-                                        <Grid size={{ xs: 2 }}>
+                                        <Grid size={{ xs: 2 }}
+                                            sx={{
+                                                cursor: "pointer",
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1
+                                            }}
+                                            onClick={() => setExpandedSubtask(expandedSubtask === subtask.id ? null : subtask.id)}
+                                        >
+                                            {expandedSubtask === subtask.id ?
+                                                <ExpandLessIcon fontSize="small" /> :
+                                                <ExpandMoreIcon fontSize="small" />
+                                            }
                                             <Typography variant="body2">{subtask.title || "N/A"}</Typography>
                                         </Grid>
                                         <Grid size={{ xs: 2 }}>
@@ -499,14 +584,14 @@ const SubtaskDrawer = ({
                                                 sx={{ ...getStatusStyle(subtask.status) }}
                                             />
                                         </Grid>
-                                        <Grid size={{ xs: 2 }}>
+                                        <Grid size={{ xs: 2 }} sx={{ width: "100px" }}>
                                             <Chip
                                                 label={subtask.priority}
                                                 size="small"
                                                 sx={{ ...getPriorityStyle(subtask.priority) }}
                                             />
                                         </Grid>
-                                        <Grid size={{ xs: 1 }}>
+                                        <Grid size={{ xs: 1 }} sx={{ width: "100px" }}>
                                             <EmailAvatars emails={subtask.assignedTo || []} />
                                         </Grid>
                                         <Grid size={{ xs: 1 }} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -518,17 +603,60 @@ const SubtaskDrawer = ({
                                             </IconButton>
                                         </Grid>
                                     </Grid>
+                                    <Collapse in={expandedSubtask === subtask.id}>
+                                        <Box sx={{ mt: 1, borderRadius: 1 }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                                <Typography variant="subtitle2">Subtask Description</Typography>
+                                                <Button
+                                                    variant="contained"
+                                                    size="small"
+                                                    onClick={() => handleSaveSubtaskDescription(subtask.id)}
+                                                >
+                                                    Save Description
+                                                </Button>
+                                            </Box>
+                                            <TextField
+                                                multiline
+                                                rows={2}
+                                                fullWidth
+                                                value={subtaskDescriptions[subtask.id] || ''}
+                                                onChange={(e) => handleSubtaskDescriptionChange(subtask.id, e.target.value)}
+                                                placeholder="Add subtask description here..."
+                                                variant="outlined"
+                                                size="small"
+                                                sx={{
+                                                    '& .MuiInputBase-root': {
+                                                        padding: '4px',
+                                                    },
+                                                    '& .MuiInputBase-input': {
+                                                        padding: '4px',
+                                                    }
+                                                }}
+                                            />
+                                        </Box>
+                                    </Collapse>
                                 </Box>
                             )}
                         </ListItem>
                     ))}
+
                 </List>
 
                 {/* Description Section */}
-                <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                        Description
-                    </Typography>
+                <Box sx={{ mt: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="subtitle1" gutterBottom>
+                            Description
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            size='small'
+                            onClick={() => handleDescriptionUpdate()}
+                            sx={{ mb: 1 }}
+                        >
+                            Save Description
+                        </Button>
+                    </Box>
                     <TextField
                         multiline
                         rows={4}
@@ -537,16 +665,10 @@ const SubtaskDrawer = ({
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Add task description here..."
                     />
-                    <Button
-                        variant="contained"
-                        onClick={() => handleDescriptionUpdate()}
-                        sx={{ mt: 1 }}
-                    >
-                        Save Description
-                    </Button>
+
                 </Box>
             </Box>
-            <ToastContainer position="top-center" autoClose={1000} />
+            {/* <ToastContainer position="top-center" autoClose={1000} /> */}
         </Drawer>
     );
 };
